@@ -1,0 +1,41 @@
+import gradio as gr
+from transformers import MarianMTModel, MarianTokenizer
+import torch
+
+# Load models and tokenizers
+model_name_ru_en = 'Helsinki-NLP/opus-mt-ru-en'
+tokenizer_ru_en = MarianTokenizer.from_pretrained(model_name_ru_en)
+model_ru_en = MarianMTModel.from_pretrained(model_name_ru_en)
+
+model_name_en_ru = 'Helsinki-NLP/opus-mt-en-ru'
+tokenizer_en_ru = MarianTokenizer.from_pretrained(model_name_en_ru)
+model_en_ru = MarianMTModel.from_pretrained(model_name_en_ru)
+
+def translate(text, direction):
+    if direction == "Russian to English":
+        tokenizer = tokenizer_ru_en
+        model = model_ru_en
+    else:  # English to Russian
+        tokenizer = tokenizer_en_ru
+        model = model_en_ru
+
+    inputs = tokenizer(text, return_tensors="pt", padding=True)
+    with torch.no_grad():
+        translated = model.generate(**inputs)
+    translated_text = tokenizer.decode(translated[0], skip_special_tokens=True)
+    return translated_text
+
+# Create Gradio interface
+iface = gr.Interface(
+    fn=translate,
+    inputs=[
+        gr.Textbox(lines=4, label="Enter Text"),
+        gr.Radio(["Russian to English", "English to Russian"], label="Translation Direction")
+    ],
+    outputs=gr.Textbox(lines=4, label="Translated Text"),
+    title="Language Translator",
+    description="Translate text between Russian and English using MarianMT models."
+)
+
+# Launch the interface
+iface.launch(share=True)
